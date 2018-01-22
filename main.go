@@ -5,9 +5,11 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/crowdpower/fund/server"
-
+	"github.com/gorilla/mux"
 	"github.com/spf13/viper"
+
+	"github.com/crowdpower/fund/controllers"
+	"github.com/crowdpower/fund/server"
 )
 
 func main() {
@@ -16,7 +18,10 @@ func main() {
 	port := viper.GetString("server.port")
 	cert := viper.GetString("server.cert")
 	key := viper.GetString("server.key")
-	r := server.Router()
+
+	r := mux.NewRouter()
+	uc := controllers.NewUserController()
+	server.Route(r.PathPrefix("/v1").Subrouter(), uc)
 
 	log.Printf("Listening on port %v", port)
 	log.Fatal(http.ListenAndServeTLS(":"+port, cert, key, r))
