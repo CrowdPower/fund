@@ -2,3 +2,7 @@
 port = "8080"
 cert = "server.crt"
 key = "server.key"
+
+[database]
+type = "sqlite3"
+path = "./storage/testing.db"

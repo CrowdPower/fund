@@ -37,7 +37,6 @@ func SendSuccess(w http.ResponseWriter, data interface{}, status int) {
 
 func SendError(w http.ResponseWriter, message string, status int) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusInternalServerError)
 
 	resp := httpResponse{Error: &httpError{Code: status, Message: message}}
 

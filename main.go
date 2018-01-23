@@ -10,17 +10,26 @@ import (
 
 	"github.com/crowdpower/fund/controllers"
 	"github.com/crowdpower/fund/server"
+	"github.com/crowdpower/fund/storage"
 )
 
 func main() {
 	getConfig()
 
+	databaseType := viper.GetString("database.type")
+	databasePath := viper.GetString("database.path")
+
 	port := viper.GetString("server.port")
 	cert := viper.GetString("server.cert")
 	key := viper.GetString("server.key")
 
+	db, err := storage.GetDB(databaseType, databasePath)
+	if err != nil {
+		log.Fatal("error connecting to database\n%v", err)
+	}
+
 	r := mux.NewRouter()
-	uc := controllers.NewUserController()
+	uc := controllers.NewUserController(db)
 	server.Route(r.PathPrefix("/v1").Subrouter(), uc)
 
 	log.Printf("Listening on port %v", port)
@@ -30,11 +39,6 @@ func main() {
 func getConfig() {
 	viper.SetConfigName("config")
 	viper.AddConfigPath(".")
-	viper.SetDefault("server", map[string]string{
-		"port": "8080",
-		"cert": "server.crt",
-		"key":  "server.key",
-	})
 
 	err := viper.ReadInConfig()
 	if err != nil {
