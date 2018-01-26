@@ -23,9 +23,12 @@ const (
 	accessExpiryTime  = time.Minute * 60 * 2
 )
 
+type handler func(w http.ResponseWriter, r *http.Request)
+
 type AuthController interface {
 	GetRefreshToken(w http.ResponseWriter, r *http.Request)
 	GetAuthToken(w http.ResponseWriter, r *http.Request)
+	Wrapper(tokenType string, h handler) handler
 }
 
 type authController struct {
@@ -136,19 +139,8 @@ func (a *authController) GetAuthToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	refreshToken, err := jwt.ParseWithClaims(bearerToken, &TokenClaims{},
-		func(token *jwt.Token) (interface{}, error) {
-			return []byte(a.jwtSecret), nil
-		},
-	)
-	if claims, ok := refreshToken.Claims.(*TokenClaims); ok && refreshToken.Valid && err == nil {
-		if claims.Type != RefreshTokenType {
-			utils.SendError(w, fmt.Sprintf("Invalid token provided, refresh token expected, got token with type '%v'", claims.Type), http.StatusBadRequest)
-			return
-		}
-	} else {
-		log.Printf("could not parse jwt\n%v", err)
-		utils.SendError(w, "Could not parse refresh token", http.StatusBadRequest)
+	if err := a.validateAccessToken(bearerToken, user.Username, RefreshTokenType); err != nil {
+		utils.SendError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -160,6 +152,55 @@ func (a *authController) GetAuthToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.SendSuccess(w, tokens{AccessToken: accessToken}, http.StatusOK)
+}
+
+func (a *authController) Wrapper(tokenType string, h handler) handler {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var bearerToken string
+		bearerTokens, ok := r.Header["Authorization"]
+		if ok && len(bearerTokens) >= 1 {
+			bearerToken = strings.TrimPrefix(bearerTokens[0], "Bearer ")
+		}
+
+		if bearerToken == "" {
+			utils.SendError(w, "Bearer token required", http.StatusUnauthorized)
+			return
+		}
+
+		username := mux.Vars(r)["username"]
+		if username == "" {
+			utils.SendError(w, "Username required", http.StatusBadRequest)
+			return
+		}
+
+		err := a.validateAccessToken(bearerToken, username, tokenType)
+		if err != nil {
+			utils.SendError(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		h(w, r)
+		return
+	}
+}
+
+func (a *authController) validateAccessToken(token string, username string, tokenType string) error {
+	refreshToken, err := jwt.ParseWithClaims(token, &TokenClaims{},
+		func(token *jwt.Token) (interface{}, error) {
+			return []byte(a.jwtSecret), nil
+		},
+	)
+
+	if claims, ok := refreshToken.Claims.(*TokenClaims); ok && refreshToken.Valid && err == nil {
+		if claims.Type != tokenType {
+			return fmt.Errorf("Invalid token provided, '%v' token expected, got token with type '%v'", tokenType, claims.Type)
+		}
+	} else {
+		log.Printf("could not parse jwt\n%v", err)
+		return fmt.Errorf("Could not parse refresh token")
+	}
+
+	return nil
 }
 
 func (a *authController) getAccessToken(username string) (string, error) {
