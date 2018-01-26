@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/mux"
 	"github.com/spf13/viper"
@@ -23,6 +24,11 @@ func main() {
 	cert := viper.GetString("server.cert")
 	key := viper.GetString("server.key")
 
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		log.Fatal("environment variable JWT_SECRET cannot be empty")
+	}
+
 	db, err := storage.GetDB(databaseType, databasePath)
 	if err != nil {
 		log.Fatal("error connecting to database\n%v", err)
@@ -30,7 +36,8 @@ func main() {
 
 	r := mux.NewRouter()
 	uc := controllers.NewUserController(db)
-	server.Route(r.PathPrefix("/v1").Subrouter(), uc)
+	ac := controllers.NewAuthController(db, jwtSecret)
+	server.Route(r.PathPrefix("/v1").Subrouter(), uc, ac)
 
 	log.Printf("Listening on port %v", port)
 	log.Fatal(http.ListenAndServeTLS(":"+port, cert, key, r))

@@ -14,6 +14,10 @@ import (
 	"github.com/crowdpower/fund/utils"
 )
 
+const (
+	passMinLength = 8
+)
+
 type UserController interface {
 	PostUser(w http.ResponseWriter, r *http.Request)
 	GetUser(w http.ResponseWriter, r *http.Request)
@@ -21,12 +25,12 @@ type UserController interface {
 	DeleteUser(w http.ResponseWriter, r *http.Request)
 }
 
-func NewUserController(db storage.DB) UserController {
-	return &userController{db}
-}
-
 type userController struct {
 	db storage.DB
+}
+
+func NewUserController(db storage.DB) UserController {
+	return &userController{db}
 }
 
 func (u *userController) PostUser(w http.ResponseWriter, r *http.Request) {
@@ -92,13 +96,16 @@ func (u *userController) PutUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if user.Password != "" {
-		user.Password, err = hashAndSalt(user.Password)
-		if err != nil {
-			log.Printf("could not hash password\n%v", err)
-			utils.SendError(w, "Could not hash password", http.StatusInternalServerError)
-			return
-		}
+	if len(user.Password) < passMinLength {
+		utils.SendError(w, fmt.Sprintf("Password must be at least %v characters", passMinLength), http.StatusBadRequest)
+		return
+	}
+
+	user.Password, err = hashAndSalt(user.Password)
+	if err != nil {
+		log.Printf("could not hash password\n%v", err)
+		utils.SendError(w, "Could not hash password", http.StatusInternalServerError)
+		return
 	}
 
 	err = u.db.UpdateUser(username, &user)

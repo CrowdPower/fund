@@ -1,0 +1,171 @@
+package controllers
+
+import (
+	"fmt"
+	"log"
+	"net/http"
+	"strings"
+	"time"
+
+	"github.com/dgrijalva/jwt-go"
+	"github.com/gorilla/mux"
+	"golang.org/x/crypto/bcrypt"
+
+	"github.com/crowdpower/fund/storage"
+	"github.com/crowdpower/fund/utils"
+)
+
+const (
+	AccessTokenType  = "access"
+	RefreshTokenType = "refresh"
+
+	refreshExpiryTime = (time.Minute * 60 * 24) * 60
+	accessExpiryTime  = time.Minute * 60 * 2
+)
+
+type AuthController interface {
+	GetRefreshToken(w http.ResponseWriter, r *http.Request)
+	GetAuthToken(w http.ResponseWriter, r *http.Request)
+}
+
+type authController struct {
+	db        storage.DB
+	jwtSecret string
+}
+
+type tokens struct {
+	RefreshToken string `json:"refreshToken,omitempty"`
+	AccessToken  string `json:"accessToken"`
+}
+
+type TokenClaims struct {
+	Type     string `json:"type"`
+	Username string `json:"username"`
+	jwt.StandardClaims
+}
+
+func NewAuthController(db storage.DB, jwtSecret string) AuthController {
+	return &authController{db, jwtSecret}
+}
+
+func (a *authController) GetRefreshToken(w http.ResponseWriter, r *http.Request) {
+	username := mux.Vars(r)["username"]
+	if username == "" {
+		utils.SendError(w, "Username required", http.StatusBadRequest)
+		return
+	}
+
+	password := r.URL.Query().Get("password")
+
+	user, err := a.db.GetUser(username)
+	if storage.IsNotFound(err) {
+		utils.SendError(w, fmt.Sprintf("User %v not found", username), http.StatusNotFound)
+		return
+	} else if err != nil {
+		log.Printf("could not get user %v from the database\n%v", username, err)
+		utils.SendError(w, "Error getting user from database", http.StatusInternalServerError)
+		return
+	}
+
+	if bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)) != nil {
+		utils.SendError(w, "Password incorrect", http.StatusUnauthorized)
+		return
+	}
+
+	refreshToken, err := jwt.NewWithClaims(jwt.SigningMethodHS512, jwt.MapClaims{
+		"exp":      time.Now().Add(refreshExpiryTime).Unix(),
+		"type":     RefreshTokenType,
+		"username": username,
+	}).SignedString([]byte(a.jwtSecret))
+	if err != nil {
+		log.Printf("could not generate refresh token\n%v", err)
+		utils.SendError(w, "Error generating token", http.StatusInternalServerError)
+		return
+	}
+
+	accessToken, err := a.getAccessToken(username)
+	if err != nil {
+		log.Printf("could not generate access token\n%v", err)
+		utils.SendError(w, "Error generating token", http.StatusInternalServerError)
+		return
+	}
+
+	t := tokens{
+		RefreshToken: refreshToken,
+		AccessToken:  accessToken,
+	}
+
+	utils.SendSuccess(w, t, http.StatusOK)
+
+	err = a.db.UpdateTokenValidity(username, true)
+	if err != nil {
+		log.Printf("could not set user token validity to valid\n%v", err)
+	}
+}
+
+func (a *authController) GetAuthToken(w http.ResponseWriter, r *http.Request) {
+	var bearerToken string
+	bearerTokens, ok := r.Header["Authorization"]
+	if ok && len(bearerTokens) >= 1 {
+		bearerToken = strings.TrimPrefix(bearerTokens[0], "Bearer ")
+	}
+
+	if bearerToken == "" {
+		utils.SendError(w, "Bearer token required", http.StatusUnauthorized)
+		return
+	}
+
+	username := mux.Vars(r)["username"]
+	if username == "" {
+		utils.SendError(w, "Username required", http.StatusBadRequest)
+		return
+	}
+
+	user, err := a.db.GetUser(username)
+	if storage.IsNotFound(err) {
+		utils.SendError(w, fmt.Sprintf("User %v not found", username), http.StatusNotFound)
+		return
+	} else if err != nil {
+		log.Printf("could not get user %v from the database\n%v", username, err)
+		utils.SendError(w, "Error getting user from database", http.StatusInternalServerError)
+		return
+	}
+
+	if user.InvalidatedTokens {
+		utils.SendError(w, "Refresh token has been invalidated", http.StatusUnauthorized)
+		return
+	}
+
+	refreshToken, err := jwt.ParseWithClaims(bearerToken, &TokenClaims{},
+		func(token *jwt.Token) (interface{}, error) {
+			return []byte(a.jwtSecret), nil
+		},
+	)
+	if claims, ok := refreshToken.Claims.(*TokenClaims); ok && refreshToken.Valid && err == nil {
+		if claims.Type != RefreshTokenType {
+			utils.SendError(w, fmt.Sprintf("Invalid token provided, refresh token expected, got token with type '%v'", claims.Type), http.StatusBadRequest)
+			return
+		}
+	} else {
+		log.Printf("could not parse jwt\n%v", err)
+		utils.SendError(w, "Could not parse refresh token", http.StatusBadRequest)
+		return
+	}
+
+	accessToken, err := a.getAccessToken(username)
+	if err != nil {
+		log.Printf("could not generate access token\n%v", err)
+		utils.SendError(w, "Error generating token", http.StatusInternalServerError)
+		return
+	}
+
+	utils.SendSuccess(w, tokens{AccessToken: accessToken}, http.StatusOK)
+}
+
+func (a *authController) getAccessToken(username string) (string, error) {
+	return jwt.NewWithClaims(jwt.SigningMethodHS512, jwt.MapClaims{
+		"exp":      time.Now().Add(accessExpiryTime).Unix(),
+		"type":     AccessTokenType,
+		"username": username,
+	}).SignedString([]byte(a.jwtSecret))
+}
