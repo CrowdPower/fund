@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/gorilla/mux"
 	"github.com/spf13/viper"
@@ -23,11 +22,7 @@ func main() {
 	port := viper.GetString("server.port")
 	cert := viper.GetString("server.cert")
 	key := viper.GetString("server.key")
-
-	jwtSecret := os.Getenv("JWT_SECRET")
-	if jwtSecret == "" {
-		log.Fatal("environment variable JWT_SECRET cannot be empty")
-	}
+	jwtSecret := viper.GetString("jwtSecret")
 
 	db, err := storage.GetDB(databaseType, databasePath)
 	if err != nil {

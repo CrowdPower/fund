@@ -2,6 +2,7 @@
 port = "8080"
 cert = "server.crt"
 key = "server.key"
+jwtSecret = "sample secret"
 
 [database]
 type = "sqlite3"
