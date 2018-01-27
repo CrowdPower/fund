@@ -10,6 +10,7 @@ import (
 
 type DB interface {
 	user
+	deposit
 }
 
 func GetDB(kind, path string) (DB, error) {

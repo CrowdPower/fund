@@ -32,7 +32,8 @@ func main() {
 	r := mux.NewRouter()
 	uc := controllers.NewUserController(db)
 	ac := controllers.NewAuthController(db, jwtSecret)
-	server.Route(r.PathPrefix("/v1").Subrouter(), uc, ac)
+	dc := controllers.NewDepositController(db)
+	server.Route(r.PathPrefix("/v1").Subrouter(), uc, ac, dc)
 
 	log.Printf("Listening on port %v", port)
 	log.Fatal(http.ListenAndServeTLS(":"+port, cert, key, r))

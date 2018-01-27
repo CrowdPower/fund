@@ -196,8 +196,7 @@ func (a *authController) validateAccessToken(token string, username string, toke
 			return fmt.Errorf("Invalid token provided, '%v' token expected, got token with type '%v'", tokenType, claims.Type)
 		}
 	} else {
-		log.Printf("could not parse jwt\n%v", err)
-		return fmt.Errorf("Could not parse refresh token")
+		return fmt.Errorf("Invalid token")
 	}
 
 	return nil

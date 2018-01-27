@@ -42,6 +42,11 @@ func (u *userController) PostUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if user.Username == "" {
+		utils.SendError(w, "Username required", http.StatusBadRequest)
+		return
+	}
+
 	user.Password, err = hashAndSalt(user.Password)
 	if err != nil {
 		log.Printf("could not hash password\n%v", err)
