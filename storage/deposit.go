@@ -9,10 +9,6 @@ import (
 	"github.com/crowdpower/fund/models"
 )
 
-const (
-	timeFormat = "2006-01-02 15:04:05"
-)
-
 type DepositArgs struct {
 	Oldest    time.Time
 	Newest    time.Time
@@ -66,12 +62,12 @@ func getDepositsConditions(depositArgs *DepositArgs) ([]string, []interface{}) {
 
 	if !depositArgs.Oldest.IsZero() {
 		conditions = append(conditions, "time >= ?")
-		args = append(args, depositArgs.Oldest.Format(timeFormat))
+		args = append(args, depositArgs.Oldest.Format(TimeFormat))
 	}
 
 	if !depositArgs.Newest.IsZero() {
 		conditions = append(conditions, "time <= ?")
-		args = append(args, depositArgs.Newest.Format(timeFormat))
+		args = append(args, depositArgs.Newest.Format(TimeFormat))
 	}
 
 	if depositArgs.MaxAmount != 0 {

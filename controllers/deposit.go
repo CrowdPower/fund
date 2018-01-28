@@ -16,10 +16,6 @@ import (
 	"github.com/crowdpower/fund/utils"
 )
 
-const (
-	timeFormat = "2006-01-02 15:04:05"
-)
-
 type DepositController interface {
 	PostDeposit(w http.ResponseWriter, r *http.Request)
 	GetDeposit(w http.ResponseWriter, r *http.Request)
@@ -51,7 +47,7 @@ func (d *depositController) PostDeposit(w http.ResponseWriter, r *http.Request) 
 
 	deposit.Username = mux.Vars(r)["username"]
 	deposit.Id = uuid.NewV4().String()
-	deposit.Time = time.Now().Format(timeFormat)
+	deposit.Time = time.Now().Format(storage.TimeFormat)
 
 	err = d.db.CreateDeposit(&deposit)
 	if err != nil {

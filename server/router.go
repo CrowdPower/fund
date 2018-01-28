@@ -12,7 +12,8 @@ func Route(
 	r *mux.Router,
 	user controllers.UserController,
 	auth controllers.AuthController,
-	deposit controllers.DepositController) {
+	deposit controllers.DepositController,
+	payment controllers.PaymentController) {
 
 	r.HandleFunc("/health",
 		GetHealth,
@@ -49,6 +50,19 @@ func Route(
 	).Methods(http.MethodGet)
 	r.HandleFunc("/user/{username}/deposits/sum",
 		auth.Wrapper(controllers.AccessTokenType, deposit.GetDepositsSum),
+	).Methods(http.MethodGet)
+
+	r.HandleFunc("/user/{username}/payment",
+		auth.Wrapper(controllers.AccessTokenType, payment.PostPayment),
+	).Methods(http.MethodPost)
+	r.HandleFunc("/user/{username}/payment",
+		auth.Wrapper(controllers.AccessTokenType, payment.GetPayment),
+	).Methods(http.MethodGet)
+	r.HandleFunc("/user/{username}/payments",
+		auth.Wrapper(controllers.AccessTokenType, payment.GetPayments),
+	).Methods(http.MethodGet)
+	r.HandleFunc("/user/{username}/payments/sum",
+		auth.Wrapper(controllers.AccessTokenType, payment.GetPaymentsSum),
 	).Methods(http.MethodGet)
 }
 

@@ -33,7 +33,8 @@ func main() {
 	uc := controllers.NewUserController(db)
 	ac := controllers.NewAuthController(db, jwtSecret)
 	dc := controllers.NewDepositController(db)
-	server.Route(r.PathPrefix("/v1").Subrouter(), uc, ac, dc)
+	pc := controllers.NewPaymentController(db)
+	server.Route(r.PathPrefix("/v1").Subrouter(), uc, ac, dc, pc)
 
 	log.Printf("Listening on port %v", port)
 	log.Fatal(http.ListenAndServeTLS(":"+port, cert, key, r))

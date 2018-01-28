@@ -8,9 +8,14 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+const (
+	TimeFormat = "2006-01-02 15:04:05"
+)
+
 type DB interface {
 	user
 	deposit
+	payment
 }
 
 func GetDB(kind, path string) (DB, error) {
