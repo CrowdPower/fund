@@ -29,7 +29,11 @@ func (d *sqlDb) CreatePayment(payment *models.Payment) error {
         INSERT INTO Payments (id, username, amount, time, url) VALUES (?, ?, ?, ?, ?)
     `, payment.Id, payment.Username, payment.Amount, payment.Time, payment.Url)
 	if err != nil {
-		log.Printf("error inserting payment %v into the database\n %v", payment, err)
+		if err.Error() == InsufficientFundsMessage {
+			err = &InsufficientFunds{}
+		} else {
+			log.Printf("error inserting payment %v into the database\n %v", payment, err)
+		}
 	}
 	return err
 }
@@ -83,7 +87,7 @@ func getPaymentsConditions(paymentArgs *PaymentArgs) ([]string, []interface{}) {
 
 	if paymentArgs.Url != "" {
 		conditions = append(conditions, "url LIKE ?")
-		args = append(args, "%" + paymentArgs.Url + "%")
+		args = append(args, "%"+paymentArgs.Url+"%")
 	}
 
 	return conditions, args

@@ -56,6 +56,10 @@ func (d *paymentController) PostPayment(w http.ResponseWriter, r *http.Request) 
 
 	err = d.db.CreatePayment(&payment)
 	if err != nil {
+		if storage.IsInsufficientFunds(err) {
+			utils.SendError(w, "Insufficient funds", http.StatusBadRequest)
+			return
+		}
 		log.Printf("could not insert payment %v into database\n%v", payment, err)
 		utils.SendError(w, "Error inserting payment into database", http.StatusInternalServerError)
 		return

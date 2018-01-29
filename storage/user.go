@@ -28,7 +28,10 @@ func (d *sqlDb) CreateUser(user *models.User) error {
 
 func (d *sqlDb) GetUser(username string) (*models.User, error) {
 	rows, err := d.db.Query(`
-        SELECT username, password, email, invalidatedtokens FROM Users WHERE username = ?
+        SELECT Users.username, Users.password, Users.email, Balances.balance, Users.invalidatedtokens
+		FROM Users
+		LEFT JOIN Balances ON Users.username = Balances.username
+		WHERE Users.username = ?
     `, username)
 	if err != nil {
 		log.Printf("error reading user %v from database\n%v", username, err)
@@ -38,7 +41,7 @@ func (d *sqlDb) GetUser(username string) (*models.User, error) {
 
 	if rows.Next() {
 		u := &models.User{}
-		err := rows.Scan(&u.Username, &u.Password, &u.Email, &u.InvalidatedTokens)
+		err := rows.Scan(&u.Username, &u.Password, &u.Email, &u.Balance, &u.InvalidatedTokens)
 		if err != nil {
 			log.Printf("error parsing database rows\n%v", err)
 			return nil, err

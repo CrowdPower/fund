@@ -9,7 +9,8 @@ import (
 )
 
 const (
-	TimeFormat = "2006-01-02 15:04:05"
+	TimeFormat               = "2006-01-02 15:04:05"
+	InsufficientFundsMessage = "Insufficient Funds"
 )
 
 type DB interface {
@@ -52,6 +53,19 @@ func (err *BadQuery) Error() string {
 
 func IsBadQuery(err error) bool {
 	if _, ok := err.(*BadQuery); ok {
+		return true
+	}
+	return false
+}
+
+type InsufficientFunds struct{}
+
+func (err *InsufficientFunds) Error() string {
+	return "Insufficient Funds"
+}
+
+func IsInsufficientFunds(err error) bool {
+	if _, ok := err.(*InsufficientFunds); ok {
 		return true
 	}
 	return false
