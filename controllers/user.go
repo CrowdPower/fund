@@ -21,6 +21,7 @@ const (
 type UserController interface {
 	PostUser(w http.ResponseWriter, r *http.Request)
 	GetUser(w http.ResponseWriter, r *http.Request)
+	GetUserExists(w http.ResponseWriter, r *http.Request)
 	PutUser(w http.ResponseWriter, r *http.Request)
 	DeleteUser(w http.ResponseWriter, r *http.Request)
 }
@@ -84,6 +85,26 @@ func (u *userController) GetUser(w http.ResponseWriter, r *http.Request) {
 	user.Password = ""
 
 	utils.SendSuccess(w, user, http.StatusOK)
+}
+
+func (u *userController) GetUserExists(w http.ResponseWriter, r *http.Request) {
+	username := mux.Vars(r)["username"]
+	if username == "" {
+		utils.SendError(w, "Username required", http.StatusBadRequest)
+		return
+	}
+
+	_, err := u.db.GetUser(username)
+	if storage.IsNotFound(err) {
+		utils.SendSuccess(w, map[string]bool{"exists": false}, http.StatusOK)
+		return
+	} else if err != nil {
+		log.Printf("could not get user %v from the database\n%v", username, err)
+		utils.SendError(w, "Error looking for user", http.StatusInternalServerError)
+		return
+	}
+
+	utils.SendSuccess(w, map[string]bool{"exists": true}, http.StatusOK)
 }
 
 func (u *userController) PutUser(w http.ResponseWriter, r *http.Request) {
