@@ -19,38 +19,38 @@ func Route(
 		GetHealth,
 	).Methods(http.MethodGet)
 
-	r.HandleFunc("/user",
+	r.HandleFunc("/users",
 		user.PostUser).Methods(http.MethodPost)
-	r.HandleFunc("/user/{username}",
+	r.HandleFunc("/users/{username}",
 		auth.Wrapper(controllers.AccessTokenType, user.GetUser)).Methods(http.MethodGet)
-	r.HandleFunc("/user/{username}/exists",
+	r.HandleFunc("/users/{username}/exists",
 		user.GetUserExists).Methods(http.MethodGet)
-	r.HandleFunc("/user/{username}",
+	r.HandleFunc("/users/{username}",
 		auth.Wrapper(controllers.AccessTokenType, user.PutUser)).Methods(http.MethodPut)
-	r.HandleFunc("/user/{username}",
+	r.HandleFunc("/users/{username}",
 		auth.Wrapper(controllers.AccessTokenType, user.DeleteUser)).Methods(http.MethodDelete)
 
-	r.HandleFunc("/user/{username}/authorize",
+	r.HandleFunc("/users/{username}/authorize",
 		auth.GetRefreshToken).Methods(http.MethodGet)
-	r.HandleFunc("/user/{username}/token",
+	r.HandleFunc("/users/{username}/token",
 		auth.Wrapper(controllers.RefreshTokenType, auth.GetAuthToken)).Methods(http.MethodGet)
 
-	r.HandleFunc("/user/{username}/deposit",
+	r.HandleFunc("/users/{username}/deposit",
 		auth.Wrapper(controllers.AccessTokenType, deposit.PostDeposit)).Methods(http.MethodPost)
-	r.HandleFunc("/user/{username}/deposit",
+	r.HandleFunc("/users/{username}/deposit",
 		auth.Wrapper(controllers.AccessTokenType, deposit.GetDeposit)).Methods(http.MethodGet)
-	r.HandleFunc("/user/{username}/deposits",
+	r.HandleFunc("/users/{username}/deposits",
 		auth.Wrapper(controllers.AccessTokenType, deposit.GetDeposits)).Methods(http.MethodGet)
-	r.HandleFunc("/user/{username}/deposits/sum",
+	r.HandleFunc("/users/{username}/deposits/sum",
 		auth.Wrapper(controllers.AccessTokenType, deposit.GetDepositsSum)).Methods(http.MethodGet)
 
-	r.HandleFunc("/user/{username}/payment",
+	r.HandleFunc("/users/{username}/payment",
 		auth.Wrapper(controllers.AccessTokenType, payment.PostPayment)).Methods(http.MethodPost)
-	r.HandleFunc("/user/{username}/payment",
+	r.HandleFunc("/users/{username}/payment",
 		auth.Wrapper(controllers.AccessTokenType, payment.GetPayment)).Methods(http.MethodGet)
-	r.HandleFunc("/user/{username}/payments",
+	r.HandleFunc("/users/{username}/payments",
 		auth.Wrapper(controllers.AccessTokenType, payment.GetPayments)).Methods(http.MethodGet)
-	r.HandleFunc("/user/{username}/payments/sum",
+	r.HandleFunc("/users/{username}/payments/sum",
 		auth.Wrapper(controllers.AccessTokenType, payment.GetPaymentsSum)).Methods(http.MethodGet)
 }
 
