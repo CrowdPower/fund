@@ -7,6 +7,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/spf13/viper"
+	"github.com/rs/cors"
 
 	"github.com/crowdpower/fund/controllers"
 	"github.com/crowdpower/fund/server"
@@ -37,7 +38,7 @@ func main() {
 	server.Route(r.PathPrefix("/v1").Subrouter(), uc, ac, dc, pc)
 
 	log.Printf("Listening on port %v", port)
-	log.Fatal(http.ListenAndServeTLS(":"+port, cert, key, r))
+	log.Fatal(http.ListenAndServeTLS(":"+port, cert, key, cors.Default().Handler(r)))
 }
 
 func getConfig() {
