@@ -21,10 +21,10 @@ func Route(
 
 	r.HandleFunc("/users",
 		user.PostUser).Methods(http.MethodPost)
+	r.HandleFunc("/users/exists",
+		user.GetUserExists).Methods(http.MethodGet)
 	r.HandleFunc("/users/{username}",
 		auth.Wrapper(controllers.AccessTokenType, user.GetUser)).Methods(http.MethodGet)
-	r.HandleFunc("/users/{username}/exists",
-		user.GetUserExists).Methods(http.MethodGet)
 	r.HandleFunc("/users/{username}",
 		auth.Wrapper(controllers.AccessTokenType, user.PutUser)).Methods(http.MethodPut)
 	r.HandleFunc("/users/{username}",

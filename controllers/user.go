@@ -88,7 +88,7 @@ func (u *userController) GetUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (u *userController) GetUserExists(w http.ResponseWriter, r *http.Request) {
-	username := mux.Vars(r)["username"]
+	username := r.URL.Query().Get("username")
 	if username == "" {
 		utils.SendError(w, "Username required", http.StatusBadRequest)
 		return
