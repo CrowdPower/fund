@@ -3,6 +3,7 @@ port = "8080"
 cert = "server.crt"
 key = "server.key"
 jwtSecret = "sample secret"
+allowedOrigins = ["http://localhost:3000", "http://localhost:3000/"]
 
 [database]
 type = "sqlite3"

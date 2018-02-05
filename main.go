@@ -23,7 +23,8 @@ func main() {
 	port := viper.GetString("server.port")
 	cert := viper.GetString("server.cert")
 	key := viper.GetString("server.key")
-	jwtSecret := viper.GetString("jwtSecret")
+	jwtSecret := viper.GetString("server.jwtSecret")
+	allowedOrigins := viper.GetStringSlice("server.allowedOrigins")
 
 	db, err := storage.GetDB(databaseType, databasePath)
 	if err != nil {
@@ -35,7 +36,7 @@ func main() {
 	ac := controllers.NewAuthController(db, jwtSecret)
 	dc := controllers.NewDepositController(db)
 	pc := controllers.NewPaymentController(db)
-	server.Route(r.PathPrefix("/v1").Subrouter(), uc, ac, dc, pc)
+	server.Route(r.PathPrefix("/v1").Subrouter(), uc, ac, dc, pc, allowedOrigins)
 
 	log.Printf("Listening on port %v", port)
 	log.Fatal(http.ListenAndServeTLS(":"+port, cert, key, cors.Default().Handler(r)))
