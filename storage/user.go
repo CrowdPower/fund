@@ -28,7 +28,7 @@ func (d *sqlDb) CreateUser(user *models.User) error {
 
 func (d *sqlDb) GetUser(username string) (*models.User, error) {
 	rows, err := d.db.Query(`
-        SELECT Users.username, Users.password, Users.email, Balances.balance, Users.invalidatedtokens
+        SELECT Users.username, Users.password, Users.email, COALESCE(Balances.balance, 0), Users.invalidatedtokens
 		FROM Users
 		LEFT JOIN Balances ON Users.username = Balances.username
 		WHERE Users.username = ?
