@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/spf13/viper"
-	"github.com/rs/cors"
 
 	"github.com/crowdpower/fund/controllers"
 	"github.com/crowdpower/fund/server"
@@ -36,10 +36,10 @@ func main() {
 	ac := controllers.NewAuthController(db, jwtSecret)
 	dc := controllers.NewDepositController(db)
 	pc := controllers.NewPaymentController(db)
-	server.Route(r.PathPrefix("/v1").Subrouter(), uc, ac, dc, pc, allowedOrigins)
+	server.Route(r.PathPrefix("/v1").Subrouter(), uc, ac, dc, pc)
 
 	log.Printf("Listening on port %v", port)
-	log.Fatal(http.ListenAndServeTLS(":"+port, cert, key, cors.Default().Handler(r)))
+	log.Fatal(http.ListenAndServeTLS(":"+port, cert, key, corsMiddleware(r, allowedOrigins)))
 }
 
 func getConfig() {
@@ -50,4 +50,24 @@ func getConfig() {
 	if err != nil {
 		panic(fmt.Errorf("Fatal error config file: %v \n", err))
 	}
+}
+
+func contains(arr []string, val string) bool {
+	for _, v := range arr {
+		if v == val {
+			return true
+		}
+	}
+	return false
+}
+
+func corsMiddleware(h http.Handler, allowedOrigins []string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", strings.Join(allowedOrigins, ", "))
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		if r.Method == "OPTIONS" {
+			return
+		}
+		h.ServeHTTP(w, r)
+	})
 }
