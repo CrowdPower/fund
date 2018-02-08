@@ -16,14 +16,19 @@ type httpError struct {
 }
 
 type httpResponse struct {
-	Data  interface{} `json:"data,omitempty"`
-	Error *httpError  `json:"error,omitempty"`
+	NextLink string      `json:"nextLink,omitempty"`
+	Data     interface{} `json:"data,omitempty"`
+	Error    *httpError  `json:"error,omitempty"`
 }
 
 func SendSuccess(w http.ResponseWriter, data interface{}, status int) {
+	SendSuccessPage(w, data, status, "")
+}
+
+func SendSuccessPage(w http.ResponseWriter, data interface{}, status int, next string) {
 	w.Header().Set("Content-Type", "application/json")
 
-	resp := httpResponse{Data: data}
+	resp := httpResponse{NextLink: next, Data: data}
 
 	respBody, err := json.Marshal(resp)
 	if err == nil {

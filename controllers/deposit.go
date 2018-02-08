@@ -155,7 +155,10 @@ func (d *depositController) GetDeposits(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	utils.SendSuccess(w, deposits, http.StatusOK)
+	r.URL.Query().Set("offset", strconv.Itoa(args.Offset+depositPageSize))
+	r.URL.Query().Set("count", strconv.Itoa(depositPageSize))
+
+	utils.SendSuccessPage(w, deposits, http.StatusOK, r.URL.String())
 }
 
 func (d *depositController) GetDepositsSum(w http.ResponseWriter, r *http.Request) {
