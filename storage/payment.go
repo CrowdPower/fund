@@ -15,6 +15,8 @@ type PaymentArgs struct {
 	MinAmount int
 	MaxAmount int
 	Url       string
+	Offset    int
+	Count     int
 }
 
 type payment interface {
@@ -98,10 +100,18 @@ func (d *sqlDb) GetPayments(username string, paymentArgs *PaymentArgs) ([]models
 	conditions = append(conditions, "username = ?")
 	args = append(args, username)
 
+	var pagination string
+	if paymentArgs.Count != 0 {
+		pagination += fmt.Sprintf("LIMIT %v ", paymentArgs.Count)
+	}
+	if paymentArgs.Offset != 0 {
+		pagination += fmt.Sprintf("OFFSET %v", paymentArgs.Offset)
+	}
+
 	rows, err := d.db.Query(`
         SELECT id, username, amount, time, url FROM Payments
 		WHERE `+strings.Join(conditions, " AND ")+`
-    `, args...)
+    `+pagination, args...)
 	if err != nil {
 		log.Printf("error reading payments from database for user %v\n%v", username, err)
 		return nil, err

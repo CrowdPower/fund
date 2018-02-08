@@ -16,6 +16,10 @@ import (
 	"github.com/crowdpower/fund/utils"
 )
 
+const (
+	paymentPageSize = 20
+)
+
 type PaymentController interface {
 	PostPayment(w http.ResponseWriter, r *http.Request)
 	GetPayment(w http.ResponseWriter, r *http.Request)
@@ -124,6 +128,20 @@ func (d *paymentController) getPaymentArgs(r *http.Request) (*storage.PaymentArg
 		}
 	}
 
+	if val := q.Get("count"); val != "" {
+		args.Count, err = strconv.Atoi(val)
+		if err != nil {
+			return nil, fmt.Errorf("parameter 'count' must be an integer")
+		}
+	}
+
+	if val := q.Get("offset"); val != "" {
+		args.Offset, err = strconv.Atoi(val)
+		if err != nil {
+			return nil, fmt.Errorf("parameter 'offset' must be an integer")
+		}
+	}
+
 	args.Url = q.Get("url")
 
 	return &args, nil
@@ -135,6 +153,10 @@ func (d *paymentController) GetPayments(w http.ResponseWriter, r *http.Request) 
 	args, err := d.getPaymentArgs(r)
 	if err != nil {
 		utils.SendError(w, err.Error(), http.StatusBadRequest)
+	}
+
+	if args.Count == 0 {
+		args.Count = paymentPageSize
 	}
 
 	payments, err := d.db.GetPayments(username, args)

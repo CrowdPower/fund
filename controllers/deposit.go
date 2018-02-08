@@ -16,6 +16,10 @@ import (
 	"github.com/crowdpower/fund/utils"
 )
 
+const (
+	depositPageSize = 20
+)
+
 type DepositController interface {
 	PostDeposit(w http.ResponseWriter, r *http.Request)
 	GetDeposit(w http.ResponseWriter, r *http.Request)
@@ -115,6 +119,20 @@ func (d *depositController) getDepositArgs(r *http.Request) (*storage.DepositArg
 		}
 	}
 
+	if val := q.Get("count"); val != "" {
+		args.Count, err = strconv.Atoi(val)
+		if err != nil {
+			return nil, fmt.Errorf("parameter 'count' must be an integer")
+		}
+	}
+
+	if val := q.Get("offset"); val != "" {
+		args.Offset, err = strconv.Atoi(val)
+		if err != nil {
+			return nil, fmt.Errorf("parameter 'offset' must be an integer")
+		}
+	}
+
 	return &args, nil
 }
 
@@ -124,6 +142,10 @@ func (d *depositController) GetDeposits(w http.ResponseWriter, r *http.Request) 
 	args, err := d.getDepositArgs(r)
 	if err != nil {
 		utils.SendError(w, err.Error(), http.StatusBadRequest)
+	}
+
+	if args.Count == 0 {
+		args.Count = depositPageSize
 	}
 
 	deposits, err := d.db.GetDeposits(username, args)

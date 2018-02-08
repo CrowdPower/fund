@@ -14,6 +14,8 @@ type DepositArgs struct {
 	Newest    time.Time
 	MinAmount int
 	MaxAmount int
+	Offset    int
+	Count     int
 }
 
 type deposit interface {
@@ -88,10 +90,18 @@ func (d *sqlDb) GetDeposits(username string, depositArgs *DepositArgs) ([]models
 	conditions = append(conditions, "username = ?")
 	args = append(args, username)
 
+	var pagination string
+	if depositArgs.Count != 0 {
+		pagination += fmt.Sprintf("LIMIT %v ", depositArgs.Count)
+	}
+	if depositArgs.Offset != 0 {
+		pagination += fmt.Sprintf("OFFSET %v", depositArgs.Offset)
+	}
+
 	rows, err := d.db.Query(`
         SELECT id, username, amount, time FROM Deposits
 		WHERE `+strings.Join(conditions, " AND ")+`
-    `, args...)
+    `+pagination, args...)
 	if err != nil {
 		log.Printf("error reading deposits from database for user %v\n%v", username, err)
 		return nil, err
