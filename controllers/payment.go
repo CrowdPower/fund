@@ -166,10 +166,7 @@ func (d *paymentController) GetPayments(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	r.URL.Query().Set("offset", strconv.Itoa(args.Offset+paymentPageSize))
-	r.URL.Query().Set("count", strconv.Itoa(paymentPageSize))
-
-	utils.SendSuccessPage(w, payments, http.StatusOK, r.URL.String())
+	utils.SendPage(w, payments, r.URL, args.Offset + paymentPageSize, paymentPageSize, len(payments) == args.Count)
 }
 
 func (d *paymentController) GetPaymentsSum(w http.ResponseWriter, r *http.Request) {
