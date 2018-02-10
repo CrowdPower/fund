@@ -4,26 +4,15 @@ import (
 	"fmt"
 	"log"
 	"strings"
-	"time"
 
 	"github.com/crowdpower/fund/models"
 )
 
-type PaymentArgs struct {
-	Oldest    time.Time
-	Newest    time.Time
-	MinAmount int
-	MaxAmount int
-	Url       string
-	Offset    int
-	Count     int
-}
-
 type payment interface {
 	CreatePayment(payment *models.Payment) error
 	GetPayment(username, id string) (*models.Payment, error)
-	GetPayments(username string, paymentArgs *PaymentArgs) ([]models.Payment, error)
-	GetPaymentsSum(username string, paymentArgs *PaymentArgs) (int, error)
+	GetPayments(username string, paymentArgs *models.PaymentArgs) ([]models.Payment, error)
+	GetPaymentsSum(username string, paymentArgs *models.PaymentArgs) (int, error)
 }
 
 func (d *sqlDb) CreatePayment(payment *models.Payment) error {
@@ -63,7 +52,7 @@ func (d *sqlDb) GetPayment(username, id string) (*models.Payment, error) {
 	return nil, &NotFound{fmt.Sprintf("payment %v", id)}
 }
 
-func getPaymentsConditions(paymentArgs *PaymentArgs) ([]string, []interface{}) {
+func getPaymentsConditions(paymentArgs *models.PaymentArgs) ([]string, []interface{}) {
 	conditions := []string{}
 	args := make([]interface{}, 0)
 
@@ -95,7 +84,7 @@ func getPaymentsConditions(paymentArgs *PaymentArgs) ([]string, []interface{}) {
 	return conditions, args
 }
 
-func (d *sqlDb) GetPayments(username string, paymentArgs *PaymentArgs) ([]models.Payment, error) {
+func (d *sqlDb) GetPayments(username string, paymentArgs *models.PaymentArgs) ([]models.Payment, error) {
 	conditions, args := getPaymentsConditions(paymentArgs)
 	conditions = append(conditions, "username = ?")
 	args = append(args, username)
@@ -132,7 +121,7 @@ func (d *sqlDb) GetPayments(username string, paymentArgs *PaymentArgs) ([]models
 	return payments, nil
 }
 
-func (d *sqlDb) GetPaymentsSum(username string, paymentArgs *PaymentArgs) (int, error) {
+func (d *sqlDb) GetPaymentsSum(username string, paymentArgs *models.PaymentArgs) (int, error) {
 	var sum int
 
 	conditions, args := getPaymentsConditions(paymentArgs)

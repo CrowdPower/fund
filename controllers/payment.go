@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -94,65 +93,14 @@ func (d *paymentController) GetPayment(w http.ResponseWriter, r *http.Request) {
 	utils.SendSuccess(w, payment, http.StatusOK)
 }
 
-func (d *paymentController) getPaymentArgs(r *http.Request) (*storage.PaymentArgs, error) {
-	var err error
-	var args storage.PaymentArgs
-
-	q := r.URL.Query()
-
-	if val := q.Get("oldest"); val != "" {
-		args.Oldest, err = time.Parse(time.RFC3339, val)
-		if err != nil {
-			return nil, fmt.Errorf("parameter 'oldest' must be be a time formatted in RFC 3339")
-		}
-	}
-
-	if val := q.Get("newest"); val != "" {
-		args.Newest, err = time.Parse(time.RFC3339, val)
-		if err != nil {
-			return nil, fmt.Errorf("parameter 'newest' must be be a time formatted in RFC 3339")
-		}
-	}
-
-	if val := q.Get("minamount"); val != "" {
-		args.MinAmount, err = strconv.Atoi(val)
-		if err != nil {
-			return nil, fmt.Errorf("parameter 'minamount' must be an integer")
-		}
-	}
-
-	if val := q.Get("maxamount"); val != "" {
-		args.MaxAmount, err = strconv.Atoi(val)
-		if err != nil {
-			return nil, fmt.Errorf("parameter 'maxamount' must be an integer")
-		}
-	}
-
-	if val := q.Get("count"); val != "" {
-		args.Count, err = strconv.Atoi(val)
-		if err != nil {
-			return nil, fmt.Errorf("parameter 'count' must be an integer")
-		}
-	}
-
-	if val := q.Get("offset"); val != "" {
-		args.Offset, err = strconv.Atoi(val)
-		if err != nil {
-			return nil, fmt.Errorf("parameter 'offset' must be an integer")
-		}
-	}
-
-	args.Url = q.Get("url")
-
-	return &args, nil
-}
-
 func (d *paymentController) GetPayments(w http.ResponseWriter, r *http.Request) {
 	username := mux.Vars(r)["username"]
 
-	args, err := d.getPaymentArgs(r)
+    args := &models.PaymentArgs{}
+	err := utils.ParseArgs(r, args)
 	if err != nil {
 		utils.SendError(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	if args.Count == 0 {
@@ -170,12 +118,13 @@ func (d *paymentController) GetPayments(w http.ResponseWriter, r *http.Request) 
 }
 
 func (d *paymentController) GetPaymentsSum(w http.ResponseWriter, r *http.Request) {
-	var err error
 	username := mux.Vars(r)["username"]
 
-	args, err := d.getPaymentArgs(r)
+    args := &models.PaymentArgs{}
+	err := utils.ParseArgs(r, args)
 	if err != nil {
 		utils.SendError(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	sum, err := d.db.GetPaymentsSum(username, args)

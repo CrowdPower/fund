@@ -4,25 +4,15 @@ import (
 	"fmt"
 	"log"
 	"strings"
-	"time"
 
 	"github.com/crowdpower/fund/models"
 )
 
-type DepositArgs struct {
-	Oldest    time.Time
-	Newest    time.Time
-	MinAmount int
-	MaxAmount int
-	Offset    int
-	Count     int
-}
-
 type deposit interface {
 	CreateDeposit(deposit *models.Deposit) error
 	GetDeposit(username, id string) (*models.Deposit, error)
-	GetDeposits(username string, depositArgs *DepositArgs) ([]models.Deposit, error)
-	GetDepositsSum(username string, depositArgs *DepositArgs) (int, error)
+	GetDeposits(username string, depositArgs *models.DepositArgs) ([]models.Deposit, error)
+	GetDepositsSum(username string, depositArgs *models.DepositArgs) (int, error)
 }
 
 func (d *sqlDb) CreateDeposit(deposit *models.Deposit) error {
@@ -58,7 +48,7 @@ func (d *sqlDb) GetDeposit(username, id string) (*models.Deposit, error) {
 	return nil, &NotFound{fmt.Sprintf("deposit %v", id)}
 }
 
-func getDepositsConditions(depositArgs *DepositArgs) ([]string, []interface{}) {
+func getDepositsConditions(depositArgs *models.DepositArgs) ([]string, []interface{}) {
 	conditions := []string{}
 	args := make([]interface{}, 0)
 
@@ -85,7 +75,7 @@ func getDepositsConditions(depositArgs *DepositArgs) ([]string, []interface{}) {
 	return conditions, args
 }
 
-func (d *sqlDb) GetDeposits(username string, depositArgs *DepositArgs) ([]models.Deposit, error) {
+func (d *sqlDb) GetDeposits(username string, depositArgs *models.DepositArgs) ([]models.Deposit, error) {
 	conditions, args := getDepositsConditions(depositArgs)
 	conditions = append(conditions, "username = ?")
 	args = append(args, username)
@@ -122,7 +112,7 @@ func (d *sqlDb) GetDeposits(username string, depositArgs *DepositArgs) ([]models
 	return deposits, nil
 }
 
-func (d *sqlDb) GetDepositsSum(username string, depositArgs *DepositArgs) (int, error) {
+func (d *sqlDb) GetDepositsSum(username string, depositArgs *models.DepositArgs) (int, error) {
 	var sum int
 
 	conditions, args := getDepositsConditions(depositArgs)

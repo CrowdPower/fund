@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -85,61 +84,11 @@ func (d *depositController) GetDeposit(w http.ResponseWriter, r *http.Request) {
 	utils.SendSuccess(w, deposit, http.StatusOK)
 }
 
-func (d *depositController) getDepositArgs(r *http.Request) (*storage.DepositArgs, error) {
-	var err error
-	var args storage.DepositArgs
-
-	q := r.URL.Query()
-
-	if val := q.Get("oldest"); val != "" {
-		args.Oldest, err = time.Parse(time.RFC3339, val)
-		if err != nil {
-			return nil, fmt.Errorf("parameter 'oldest' must be be a time formatted in RFC 3339")
-		}
-	}
-
-	if val := q.Get("newest"); val != "" {
-		args.Newest, err = time.Parse(time.RFC3339, val)
-		if err != nil {
-			return nil, fmt.Errorf("parameter 'newest' must be be a time formatted in RFC 3339")
-		}
-	}
-
-	if val := q.Get("minamount"); val != "" {
-		args.MinAmount, err = strconv.Atoi(val)
-		if err != nil {
-			return nil, fmt.Errorf("parameter 'minamount' must be an integer")
-		}
-	}
-
-	if val := q.Get("maxamount"); val != "" {
-		args.MaxAmount, err = strconv.Atoi(val)
-		if err != nil {
-			return nil, fmt.Errorf("parameter 'maxamount' must be an integer")
-		}
-	}
-
-	if val := q.Get("count"); val != "" {
-		args.Count, err = strconv.Atoi(val)
-		if err != nil {
-			return nil, fmt.Errorf("parameter 'count' must be an integer")
-		}
-	}
-
-	if val := q.Get("offset"); val != "" {
-		args.Offset, err = strconv.Atoi(val)
-		if err != nil {
-			return nil, fmt.Errorf("parameter 'offset' must be an integer")
-		}
-	}
-
-	return &args, nil
-}
-
 func (d *depositController) GetDeposits(w http.ResponseWriter, r *http.Request) {
 	username := mux.Vars(r)["username"]
 
-	args, err := d.getDepositArgs(r)
+	args := &models.DepositArgs{}
+	err := utils.ParseArgs(r, args)
 	if err != nil {
 		utils.SendError(w, err.Error(), http.StatusBadRequest)
 	}
@@ -159,10 +108,10 @@ func (d *depositController) GetDeposits(w http.ResponseWriter, r *http.Request) 
 }
 
 func (d *depositController) GetDepositsSum(w http.ResponseWriter, r *http.Request) {
-	var err error
 	username := mux.Vars(r)["username"]
 
-	args, err := d.getDepositArgs(r)
+	args := &models.DepositArgs{}
+	err := utils.ParseArgs(r, args)
 	if err != nil {
 		utils.SendError(w, err.Error(), http.StatusBadRequest)
 	}

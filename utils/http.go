@@ -1,10 +1,13 @@
 package utils
 
 import (
-	"net/http"
 	"encoding/json"
-	"log"
 	"fmt"
+	"log"
+	"net/http"
+	"reflect"
+	"strconv"
+	"time"
 )
 
 /*
@@ -75,4 +78,40 @@ func SendError(w http.ResponseWriter, message string, status int) {
 		log.Printf("error marshalling response body\n %v\n error\n %v", resp, err)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
+}
+
+// takes a pointer to the target structure, structure may be modified on error
+func ParseArgs(r *http.Request, target interface{}) error {
+	q := r.URL.Query()
+	targTypes := reflect.TypeOf(target).Elem()
+	targVals := reflect.ValueOf(target).Elem()
+	for i := 0; i < targVals.NumField(); i++ {
+		targType := targTypes.Field(i)
+		targVal := targVals.Field(i)
+
+		key := targType.Tag.Get("query")
+		val := q.Get(key)
+		if val == "" {
+			continue
+		}
+
+		switch targType.Type.Kind() {
+		case reflect.String:
+			targVal.SetString(val)
+		case reflect.Int:
+			intVal, err := strconv.Atoi(val)
+			if err != nil {
+				return fmt.Errorf("parameter '%v' must be be an integer", key)
+			}
+			targVal.SetInt(int64(intVal))
+		case reflect.TypeOf(time.Time{}).Kind():
+			timeVal, err := time.Parse(time.RFC3339, val)
+			if err != nil {
+				return fmt.Errorf("parameter '%v' must be be a time value", key)
+			}
+			targVal.Set(reflect.ValueOf(timeVal))
+		}
+	}
+
+	return nil
 }
