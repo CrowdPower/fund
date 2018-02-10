@@ -1,11 +1,10 @@
 package utils
 
 import (
+	"net/http"
 	"encoding/json"
 	"log"
-	"net/http"
-	"net/url"
-	"strconv"
+	"fmt"
 )
 
 /*
@@ -36,19 +35,23 @@ func SendSuccess(w http.ResponseWriter, data interface{}, status int) {
 	}
 }
 
-func SendPage(w http.ResponseWriter, data interface{}, url *url.URL, offset int, count int, more bool) {
+func SendPage(w http.ResponseWriter, r *http.Request, data interface{}, offset int, count int, more bool) {
 	nextLink := ""
 	if more {
-		url.Query().Set("offset", strconv.Itoa(offset))
-		url.Query().Set("count", strconv.Itoa(count))
-
-		w.Header().Set("Content-Type", "application/json")
-
-		nextLink = url.String()
+		query := r.URL.RawQuery
+		if query != "" {
+			query += "&"
+		} else {
+			query += "?"
+		}
+		query += fmt.Sprintf("offset=%v&count=%v", offset, count)
+		nextLink = fmt.Sprintf("https://%v%v%v", r.Host, r.RequestURI, query)
+		log.Printf(nextLink)
 	}
 
 	resp := httpResponse{NextLink: nextLink, Data: data}
 
+	w.Header().Set("Content-Type", "application/json")
 	respBody, err := json.Marshal(resp)
 	if err == nil {
 		w.WriteHeader(http.StatusOK)
