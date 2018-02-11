@@ -66,7 +66,7 @@ func (d *sqlDb) GetDeposits(username string, depositArgs *models.DepositArgs) ([
 	}
 
 	rows, err := d.db.Query(`
-        SELECT id, username, amount, time FROM Deposits `+whereStatement+`
+        SELECT id, username, amount, time FROM Deposits `+whereStatement+` ORDER BY time DESC
     `+pagination, args...)
 	if err != nil {
 		log.Printf("error reading deposits from database for user %v\n%v", username, err)

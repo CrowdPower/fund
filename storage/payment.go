@@ -71,7 +71,7 @@ func (d *sqlDb) GetPayments(username string, paymentArgs *models.PaymentArgs) ([
 	}
 
 	rows, err := d.db.Query(`
-        SELECT id, username, amount, time, url FROM Payments `+whereStatement+`
+        SELECT id, username, amount, time, url FROM Payments `+whereStatement+` ORDER BY time DESC
     `+pagination, args...)
 	if err != nil {
 		log.Printf("error reading payments from database for user %v\n%v", username, err)
