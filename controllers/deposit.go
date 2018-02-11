@@ -104,7 +104,7 @@ func (d *depositController) GetDeposits(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	utils.SendPage(w, r, deposits, args.Offset + depositPageSize, depositPageSize, len(deposits) == args.Count)
+	utils.SendPage(w, r, deposits, args.Offset+depositPageSize, depositPageSize, len(deposits) == args.Count)
 }
 
 func (d *depositController) GetDepositsSum(w http.ResponseWriter, r *http.Request) {

@@ -96,7 +96,7 @@ func (d *paymentController) GetPayment(w http.ResponseWriter, r *http.Request) {
 func (d *paymentController) GetPayments(w http.ResponseWriter, r *http.Request) {
 	username := mux.Vars(r)["username"]
 
-    args := &models.PaymentArgs{}
+	args := &models.PaymentArgs{}
 	err := utils.ParseArgs(r, args)
 	if err != nil {
 		utils.SendError(w, err.Error(), http.StatusBadRequest)
@@ -114,13 +114,13 @@ func (d *paymentController) GetPayments(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	utils.SendPage(w, r, payments, args.Offset + paymentPageSize, paymentPageSize, len(payments) == args.Count)
+	utils.SendPage(w, r, payments, args.Offset+paymentPageSize, paymentPageSize, len(payments) == args.Count)
 }
 
 func (d *paymentController) GetPaymentsSum(w http.ResponseWriter, r *http.Request) {
 	username := mux.Vars(r)["username"]
 
-    args := &models.PaymentArgs{}
+	args := &models.PaymentArgs{}
 	err := utils.ParseArgs(r, args)
 	if err != nil {
 		utils.SendError(w, err.Error(), http.StatusBadRequest)

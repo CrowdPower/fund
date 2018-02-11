@@ -49,7 +49,6 @@ func SendPage(w http.ResponseWriter, r *http.Request, data interface{}, offset i
 		}
 		query += fmt.Sprintf("offset=%v&count=%v", offset, count)
 		nextLink = fmt.Sprintf("https://%v%v%v", r.Host, r.RequestURI, query)
-		log.Printf(nextLink)
 	}
 
 	resp := httpResponse{NextLink: nextLink, Data: data}

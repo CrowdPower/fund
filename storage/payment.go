@@ -3,9 +3,9 @@ package storage
 import (
 	"fmt"
 	"log"
-	"strings"
 
 	"github.com/crowdpower/fund/models"
+	"github.com/crowdpower/fund/utils"
 )
 
 type payment interface {
@@ -52,42 +52,15 @@ func (d *sqlDb) GetPayment(username, id string) (*models.Payment, error) {
 	return nil, &NotFound{fmt.Sprintf("payment %v", id)}
 }
 
-func getPaymentsConditions(paymentArgs *models.PaymentArgs) ([]string, []interface{}) {
-	conditions := []string{}
-	args := make([]interface{}, 0)
-
-	if !paymentArgs.Oldest.IsZero() {
-		conditions = append(conditions, "time >= ?")
-		args = append(args, paymentArgs.Oldest.Format(TimeFormat))
-	}
-
-	if !paymentArgs.Newest.IsZero() {
-		conditions = append(conditions, "time <= ?")
-		args = append(args, paymentArgs.Newest.Format(TimeFormat))
-	}
-
-	if paymentArgs.MaxAmount != 0 {
-		conditions = append(conditions, "amount <= ?")
-		args = append(args, paymentArgs.MaxAmount)
-	}
-
-	if paymentArgs.MinAmount != 0 {
-		conditions = append(conditions, "amount >= ?")
-		args = append(args, paymentArgs.MinAmount)
-	}
-
-	if paymentArgs.Url != "" {
-		conditions = append(conditions, "url LIKE ?")
-		args = append(args, "%"+paymentArgs.Url+"%")
-	}
-
-	return conditions, args
-}
-
 func (d *sqlDb) GetPayments(username string, paymentArgs *models.PaymentArgs) ([]models.Payment, error) {
-	conditions, args := getPaymentsConditions(paymentArgs)
-	conditions = append(conditions, "username = ?")
-	args = append(args, username)
+	whereStatement, args := utils.SqlWhere([]utils.SqlCondition{
+		utils.SqlCondition{"time", ">=", paymentArgs.Oldest},
+		utils.SqlCondition{"time", "<=", paymentArgs.Newest},
+		utils.SqlCondition{"amount", ">=", paymentArgs.MinAmount},
+		utils.SqlCondition{"amount", "<=", paymentArgs.MaxAmount},
+		utils.SqlCondition{"url", "LIKE", "%" + paymentArgs.Url + "%"},
+		utils.SqlCondition{"username", "=", username},
+	})
 
 	var pagination string
 	if paymentArgs.Count != 0 {
@@ -98,8 +71,7 @@ func (d *sqlDb) GetPayments(username string, paymentArgs *models.PaymentArgs) ([
 	}
 
 	rows, err := d.db.Query(`
-        SELECT id, username, amount, time, url FROM Payments
-		WHERE `+strings.Join(conditions, " AND ")+`
+        SELECT id, username, amount, time, url FROM Payments `+whereStatement+`
     `+pagination, args...)
 	if err != nil {
 		log.Printf("error reading payments from database for user %v\n%v", username, err)
@@ -124,13 +96,17 @@ func (d *sqlDb) GetPayments(username string, paymentArgs *models.PaymentArgs) ([
 func (d *sqlDb) GetPaymentsSum(username string, paymentArgs *models.PaymentArgs) (int, error) {
 	var sum int
 
-	conditions, args := getPaymentsConditions(paymentArgs)
-	conditions = append(conditions, "username = ?")
-	args = append(args, username)
+	whereStatement, args := utils.SqlWhere([]utils.SqlCondition{
+		utils.SqlCondition{"time", ">=", paymentArgs.Oldest},
+		utils.SqlCondition{"time", "<=", paymentArgs.Newest},
+		utils.SqlCondition{"amount", ">=", paymentArgs.MinAmount},
+		utils.SqlCondition{"amount", "<=", paymentArgs.MaxAmount},
+		utils.SqlCondition{"url", "LIKE", "%" + paymentArgs.Url + "%"},
+		utils.SqlCondition{"username", "=", username},
+	})
 
 	rows, err := d.db.Query(`
-        SELECT SUM(amount) FROM Payments
-		WHERE `+strings.Join(conditions, " AND ")+`
+        SELECT SUM(amount) FROM Payments `+whereStatement+`
     `, args...)
 	if err != nil {
 		log.Printf("error summing payments from database for user %v\n%v", username, err)

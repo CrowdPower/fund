@@ -3,9 +3,9 @@ package storage
 import (
 	"fmt"
 	"log"
-	"strings"
 
 	"github.com/crowdpower/fund/models"
+	"github.com/crowdpower/fund/utils"
 )
 
 type deposit interface {
@@ -48,49 +48,25 @@ func (d *sqlDb) GetDeposit(username, id string) (*models.Deposit, error) {
 	return nil, &NotFound{fmt.Sprintf("deposit %v", id)}
 }
 
-func getDepositsConditions(depositArgs *models.DepositArgs) ([]string, []interface{}) {
-	conditions := []string{}
-	args := make([]interface{}, 0)
-
-	if !depositArgs.Oldest.IsZero() {
-		conditions = append(conditions, "time >= ?")
-		args = append(args, depositArgs.Oldest.Format(TimeFormat))
-	}
-
-	if !depositArgs.Newest.IsZero() {
-		conditions = append(conditions, "time <= ?")
-		args = append(args, depositArgs.Newest.Format(TimeFormat))
-	}
-
-	if depositArgs.MaxAmount != 0 {
-		conditions = append(conditions, "amount <= ?")
-		args = append(args, depositArgs.MaxAmount)
-	}
-
-	if depositArgs.MinAmount != 0 {
-		conditions = append(conditions, "amount >= ?")
-		args = append(args, depositArgs.MinAmount)
-	}
-
-	return conditions, args
-}
-
 func (d *sqlDb) GetDeposits(username string, depositArgs *models.DepositArgs) ([]models.Deposit, error) {
-	conditions, args := getDepositsConditions(depositArgs)
-	conditions = append(conditions, "username = ?")
-	args = append(args, username)
+	whereStatement, args := utils.SqlWhere([]utils.SqlCondition{
+		utils.SqlCondition{"time", ">=", depositArgs.Oldest},
+		utils.SqlCondition{"time", "<=", depositArgs.Newest},
+		utils.SqlCondition{"amount", ">=", depositArgs.MinAmount},
+		utils.SqlCondition{"amount", "<=", depositArgs.MaxAmount},
+		utils.SqlCondition{"username", "=", username},
+	})
 
 	var pagination string
 	if depositArgs.Count != 0 {
 		pagination += fmt.Sprintf("LIMIT %v ", depositArgs.Count)
 	}
 	if depositArgs.Offset != 0 {
-		pagination += fmt.Sprintf("OFFSET %v", depositArgs.Offset)
+		pagination += fmt.Sprintf("OFFSET %v ", depositArgs.Offset)
 	}
 
 	rows, err := d.db.Query(`
-        SELECT id, username, amount, time FROM Deposits
-		WHERE `+strings.Join(conditions, " AND ")+`
+        SELECT id, username, amount, time FROM Deposits `+whereStatement+`
     `+pagination, args...)
 	if err != nil {
 		log.Printf("error reading deposits from database for user %v\n%v", username, err)
@@ -115,13 +91,16 @@ func (d *sqlDb) GetDeposits(username string, depositArgs *models.DepositArgs) ([
 func (d *sqlDb) GetDepositsSum(username string, depositArgs *models.DepositArgs) (int, error) {
 	var sum int
 
-	conditions, args := getDepositsConditions(depositArgs)
-	conditions = append(conditions, "username = ?")
-	args = append(args, username)
+	whereStatement, args := utils.SqlWhere([]utils.SqlCondition{
+		utils.SqlCondition{"time", ">=", depositArgs.Oldest},
+		utils.SqlCondition{"time", "<=", depositArgs.Newest},
+		utils.SqlCondition{"amount", ">=", depositArgs.MinAmount},
+		utils.SqlCondition{"amount", "<=", depositArgs.MaxAmount},
+		utils.SqlCondition{"username", "=", username},
+	})
 
 	rows, err := d.db.Query(`
-        SELECT SUM(amount) FROM Deposits
-		WHERE `+strings.Join(conditions, " AND ")+`
+        SELECT SUM(amount) FROM Deposits `+whereStatement+`
     `, args...)
 	if err != nil {
 		log.Printf("error summing deposits from database for user %v\n%v", username, err)
