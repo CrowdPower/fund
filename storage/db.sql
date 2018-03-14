@@ -26,14 +26,14 @@ CREATE TABLE Payments (
 );
 
 CREATE VIEW Balances AS
-SELECT Users.username, depositsum - paymentsum AS balance
+SELECT Users.username, IFNULL(depositsum, 0) - IFNULL(paymentsum, 0) AS balance
 FROM Users
 LEFT JOIN 
-    (SELECT username, IFNULL(SUM(amount), 0) AS depositsum
+    (SELECT username, SUM(amount) AS depositsum
     FROM Deposits GROUP BY username) AS Deposits
 ON Users.username = Deposits.username
 LEFT JOIN 
-    (SELECT username, IFNULL(SUM(amount), 0) AS paymentsum
+    (SELECT username, SUM(amount) AS paymentsum
     FROM Payments GROUP BY username) AS Payments
 ON Users.username = Payments.username;
 
