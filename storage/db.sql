@@ -38,8 +38,8 @@ LEFT JOIN
 ON Users.username = Payments.username;
 
 CREATE TRIGGER BalanceCheck
-BEFORE INSERT ON Payments
-WHEN NEW.amount >= (SELECT balance FROM Balances WHERE Balances.username = NEW.username)
+AFTER INSERT ON Payments
+WHEN 0 > (SELECT balance FROM Balances WHERE Balances.username = NEW.username)
 BEGIN
     SELECT RAISE(ROLLBACK, "Insufficient Funds");
 END;
