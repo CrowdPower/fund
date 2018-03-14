@@ -58,7 +58,11 @@ func (a *authController) GetRefreshToken(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	password := r.URL.Query().Get("password")
+	password := r.Header.Get("Password")
+	if password == "" {
+		utils.SendError(w, "Password header required", http.StatusBadRequest)
+		return
+	}
 
 	user, err := a.db.GetUser(username)
 	if storage.IsNotFound(err) {
